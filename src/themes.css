@@ -1,3 +1,4 @@
+/* This file contains AI-generated code. */
 /*
  * Theme overrides — applied via <html data-theme="<id>">.
  *
@@ -15,6 +16,33 @@
  *      in index.html so the pre-CSS frame matches (no white flash).
  *   4. Switch to it via `data-theme` on <html> in index.html.
  */
+
+/* Goodturn uses calm paper and green so the openings stay readable. */
+[data-theme="goodturn"] {
+  color-scheme: light;
+  --color-background: #f6f4ed;
+  --color-foreground: #172e24;
+  --color-card: #ffffff;
+  --color-card-foreground: #172e24;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #172e24;
+  --color-primary: #27634d;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #edf2e9;
+  --color-secondary-foreground: #27533f;
+  --color-muted: #eeeae0;
+  --color-muted-foreground: #59685d;
+  --color-accent: #f1ddbd;
+  --color-accent-foreground: #573a1b;
+  --color-destructive: #b23d36;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #d8ded4;
+  --color-input: #cbd5ca;
+  --color-ring: #27634d;
+  --color-shell: #f6f4ed;
+  --color-shell-panel: #ffffff;
+  --radius: 0.75rem;
+}
 
 /* Paper — light example theme; shows the full token contract incl.
  * `color-scheme: light`. Replace or delete it once the app has its own. */

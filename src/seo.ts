@@ -1,3 +1,4 @@
+/* This file contains AI-generated code. */
 /**
  * Public-page SEO — what search engines, AI answer engines, and link previews
  * see for this app.
@@ -17,21 +18,25 @@
  * restrictions require separate controls.
  */
 
-import { APP_NAME } from './constants'
+import { APP_NAME } from "./constants";
 
 /** Injected by prerender.ts: `https://<name>.app.space` from wrangler.toml, or
  *  what `deepspace deploy` passes (staging: spacestest.com). Absent in unit
  *  tests, hence the guard. */
-declare const __DEEPSPACE_SITE_ORIGIN__: string | undefined
+declare const __DEEPSPACE_SITE_ORIGIN__: string | undefined;
 
 export const seo = {
   title: APP_NAME,
-  description: `${APP_NAME} is a real-time collaborative app.`,
+  description:
+    "Goodturn helps community coordinators post volunteer openings and lets people claim a spot on a live, shared board.",
   /** Public origin for canonical URLs, og:url, and the sitemap — no trailing
    *  slash. Replace with the custom domain once one is attached, e.g.
    *  'https://www.example.com'. */
-  origin: typeof __DEEPSPACE_SITE_ORIGIN__ === 'string' ? __DEEPSPACE_SITE_ORIGIN__ : 'http://localhost',
+  origin:
+    typeof __DEEPSPACE_SITE_ORIGIN__ === "string"
+      ? __DEEPSPACE_SITE_ORIGIN__
+      : "http://localhost",
   /** 1200×630 preview image, root-relative to public/ (e.g. '/og.png'). */
   // ogImage: '/og.png',
   noindex: false,
-}
+};

@@ -1,3 +1,4 @@
+/* This file contains AI-generated code. */
 /**
  * Collection Schemas
  *
@@ -10,8 +11,11 @@
 import type { CollectionSchema } from 'deepspace/schema'
 import { usersSchema } from './schemas/users-schema'
 import { settingsSchema } from './schemas/admin-schema'
+import { shiftsSchema, signupsSchema } from './schemas/shifts-schema'
 
 export const schemas: CollectionSchema[] = [
   usersSchema,
   settingsSchema,
+  shiftsSchema,
+  signupsSchema,
 ]

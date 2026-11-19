@@ -1,3 +1,4 @@
+/* This file contains AI-generated code. */
 /**
  * Landing page — a STATIC page.
  *
@@ -16,35 +17,81 @@
  * initial states. `<Seo>` comes first and reads src/seo.ts.
  */
 
-import { Link } from 'react-router-dom'
-import { Seo } from '../components/Seo'
-import { APP_NAME } from '../constants'
-import { seo } from '../seo'
+import { Link } from "react-router-dom";
+import { Seo } from "../components/Seo";
+import { APP_NAME } from "../constants";
+import { seo } from "../seo";
 
+/** Explain the service before visitors enter the live, signed-in board. */
 export default function Landing() {
   return (
     <>
       <Seo {...seo} path="/" />
       <div
         data-testid="static-landing"
-        className="flex min-h-screen flex-col items-center justify-center px-6 text-center"
+        className="min-h-screen bg-background text-foreground"
       >
-        <p className="mb-3 text-sm uppercase tracking-widest text-muted-foreground">{APP_NAME}</p>
-        <h1 className="mb-4 max-w-2xl text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-          A DeepSpace app with a static front door
-        </h1>
-        <p className="mb-8 max-w-md text-muted-foreground">
-          This landing page ships no auth call and no realtime connection — it's a
-          plain static page. The live app, with sign-in and synced data, lives
-          behind the link below.
-        </p>
-        <Link
-          to="/home"
-          className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-        >
-          Enter the app
-        </Link>
+        <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
+          <span className="font-serif text-2xl font-bold tracking-tight">
+            {APP_NAME}
+            <span className="text-primary">.</span>
+          </span>
+          <Link
+            to="/home"
+            className="text-sm font-semibold text-primary hover:underline"
+          >
+            Open shift board ↗
+          </Link>
+        </nav>
+        <main className="mx-auto max-w-6xl px-6 pb-24 pt-20 sm:pt-28">
+          <div className="max-w-3xl">
+            <p className="mb-7 text-xs font-bold uppercase tracking-[.24em] text-primary">
+              For the neighbors who show up
+            </p>
+            <h1 className="font-serif text-5xl leading-[1.08] tracking-tight sm:text-7xl">
+              Make room for
+              <br />
+              <em className="text-primary">more good.</em>
+            </h1>
+            <p className="mt-8 max-w-xl text-lg leading-8 text-muted-foreground">
+              One clear place to offer your time. Coordinators post what needs
+              doing; volunteers claim a spot; the roster updates for everyone.
+            </p>
+            <Link
+              to="/home"
+              className="mt-8 inline-flex rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground hover:opacity-90"
+            >
+              Explore openings <span className="ml-3">↗</span>
+            </Link>
+          </div>
+          <div className="mt-24 grid gap-5 border-t border-border pt-10 md:grid-cols-3">
+            <div>
+              <span className="text-sm font-bold text-primary">01 /</span>
+              <h2 className="mt-4 font-serif text-2xl">Post a need</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                A coordinator adds a role, place, time, and the details that
+                help someone arrive prepared.
+              </p>
+            </div>
+            <div>
+              <span className="text-sm font-bold text-primary">02 /</span>
+              <h2 className="mt-4 font-serif text-2xl">Claim a spot</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                A volunteer signs in and claims an open spot. Each opening can
+                be claimed once.
+              </p>
+            </div>
+            <div>
+              <span className="text-sm font-bold text-primary">03 /</span>
+              <h2 className="mt-4 font-serif text-2xl">Stay in sync</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                Everyone sees the current roster right away, with a simple way
+                to release a commitment.
+              </p>
+            </div>
+          </div>
+        </main>
       </div>
     </>
-  )
+  );
 }

@@ -1,3 +1,4 @@
+/* This file contains AI-generated code. */
 /**
  * Multi-user collaboration spec — verifies two users sign in into
  * separate browser contexts and the app distinguishes them.
@@ -15,7 +16,7 @@
  * persisted to `~/.deepspace/playwright-states/`), context creation, and
  * cleanup. No need to manage browser contexts manually.
  */
-import { test, expect, loadAllTestAccounts } from 'deepspace/testing'
+import { test, expect, loadAllTestAccounts } from "deepspace/testing";
 
 // A machine that has never created test accounts is the normal state of a
 // fresh checkout, and there `users()` throws — turning "you have no pool yet"
@@ -23,20 +24,20 @@ import { test, expect, loadAllTestAccounts } from 'deepspace/testing'
 // and say what creates the pool. The count is of accounts usable HERE: the
 // pool is global per developer, but passwords live only on the machine that
 // created the account.
-const usableTestAccounts = loadAllTestAccounts().length
+const usableTestAccounts = loadAllTestAccounts().length;
 test.skip(
   usableTestAccounts < 2,
   `Needs 2 usable test accounts, found ${usableTestAccounts}. Create them with ` +
     '`npx deepspace test accounts create --email <name>@deepspace.test --name "<name>" ' +
-    '--password-stdin`, or fetch existing pool accounts with `npx deepspace test accounts recover --all`.',
-)
+    "--password-stdin`, or fetch existing pool accounts with `npx deepspace test accounts recover --all`.",
+);
 
-test('each browser renders its own signed-in account', async ({ users }) => {
-  const [a, b] = await users(2)
+test("each browser renders its own signed-in account", async ({ users }) => {
+  const [a, b] = await users(2);
 
   // /home is dynamic (under src/pages/(app)/), so it mounts the nav shell;
   // '/' is the static landing and has no navigation.
-  await Promise.all([a.page.goto('/home'), b.page.goto('/home')])
+  await Promise.all([a.page.goto("/home"), b.page.goto("/home")]);
 
   // Email, not name. The page renders the *session's* `name || email`, while
   // `user.name` here comes from the LOCAL account registry — and the two are
@@ -47,87 +48,158 @@ test('each browser renders its own signed-in account', async ({ users }) => {
   // The two accounts are distinct, so two exact matches is also the proof that
   // the contexts are not sharing one session.
   for (const user of [a, b]) {
-    await expect(user.page.getByTestId('app-navigation')).toBeVisible({ timeout: 15_000 })
+    await expect(user.page.getByTestId("app-navigation")).toBeVisible({
+      timeout: 15_000,
+    });
 
     // The identity chip shows `name || email`. Its text is not predictable, but
     // its presence is: something must be there once the profile has loaded.
     // (It is `hidden sm:inline` in some templates, so assert text, not
     // visibility.)
-    await expect(user.page.getByTestId('nav-user-name')).toHaveText(/\S/, { timeout: 15_000 })
-
-    await user.page.getByRole('button', { name: 'Account menu' }).click()
-    await expect(user.page.getByTestId('nav-user-email')).toHaveText(user.email, {
+    await expect(user.page.getByTestId("nav-user-name")).toHaveText(/\S/, {
       timeout: 15_000,
-    })
+    });
+
+    await user.page.getByRole("button", { name: "Account menu" }).click();
+    await expect(user.page.getByTestId("nav-user-email")).toHaveText(
+      user.email,
+      {
+        timeout: 15_000,
+      },
+    );
   }
-})
+});
 
-test('API status page renders loading success and error states', async ({ users }) => {
-  const [user] = await users(1)
-  let shouldFail = false
-  let requestCount = 0
+test("API status page renders loading success and error states", async ({
+  users,
+}) => {
+  const [user] = await users(1);
+  let shouldFail = false;
+  let requestCount = 0;
 
-  await user.page.route('**/api/integrations', async (route) => {
-    requestCount += 1
+  await user.page.route("**/api/integrations", async (route) => {
+    requestCount += 1;
     if (shouldFail) {
       await route.fulfill({
         status: 502,
-        contentType: 'application/json',
-        body: JSON.stringify({ success: false, error: 'Catalog unavailable' }),
-      })
-      return
+        contentType: "application/json",
+        body: JSON.stringify({ success: false, error: "Catalog unavailable" }),
+      });
+      return;
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100));
     await route.fulfill({
       status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ success: true, data: { integrations: { openai: {}, wikipedia: {} } } }),
-    })
-  })
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: { integrations: { openai: {}, wikipedia: {} } },
+      }),
+    });
+  });
 
-  await user.page.goto('/api-status')
-  await expect(user.page.getByText('Loading integration catalog...')).toBeVisible()
-  await expect(user.page.getByText('Integration catalog ready')).toBeVisible()
-  await expect(user.page.getByText('2 integrations available.')).toBeVisible()
+  await user.page.goto("/api-status");
+  await expect(
+    user.page.getByText("Loading integration catalog..."),
+  ).toBeVisible();
+  await expect(user.page.getByText("Integration catalog ready")).toBeVisible();
+  await expect(user.page.getByText("2 integrations available.")).toBeVisible();
 
-  shouldFail = true
-  await user.page.getByRole('button', { name: 'Refresh' }).click()
-  await expect(user.page.getByText('Catalog unavailable')).toBeVisible()
-  await expect(user.page.getByText('Showing the last loaded catalog')).toBeVisible()
-  await expect(user.page.getByText('Integration catalog ready')).toBeVisible()
+  shouldFail = true;
+  await user.page.getByRole("button", { name: "Refresh" }).click();
+  await expect(user.page.getByText("Catalog unavailable")).toBeVisible();
+  await expect(
+    user.page.getByText("Showing the last loaded catalog"),
+  ).toBeVisible();
+  await expect(user.page.getByText("Integration catalog ready")).toBeVisible();
 
-  const urlAfterFailure = user.page.url()
-  const requestsAfterFailure = requestCount
-  await user.page.getByRole('button', { name: 'Refresh' }).click()
-  await expect.poll(() => requestCount).toBeGreaterThan(requestsAfterFailure)
-  expect(user.page.url()).toBe(urlAfterFailure)
-})
+  const urlAfterFailure = user.page.url();
+  const requestsAfterFailure = requestCount;
+  await user.page.getByRole("button", { name: "Refresh" }).click();
+  await expect.poll(() => requestCount).toBeGreaterThan(requestsAfterFailure);
+  expect(user.page.url()).toBe(urlAfterFailure);
+});
 
-test('API status page shows local retry after first-load API failure', async ({ users }) => {
-  const [user] = await users(1)
-  let requestCount = 0
+test("API status page shows local retry after first-load API failure", async ({
+  users,
+}) => {
+  const [user] = await users(1);
+  let requestCount = 0;
 
-  await user.page.route('**/api/integrations', async (route) => {
-    requestCount += 1
+  await user.page.route("**/api/integrations", async (route) => {
+    requestCount += 1;
     await route.fulfill({
       status: 502,
-      contentType: 'application/json',
-      body: JSON.stringify({ success: false, error: 'Catalog unavailable' }),
-    })
-  })
+      contentType: "application/json",
+      body: JSON.stringify({ success: false, error: "Catalog unavailable" }),
+    });
+  });
 
-  await user.page.goto('/api-status')
-  await expect(user.page.getByText('Loading integration catalog...')).toBeVisible()
-  await expect(user.page.getByText('Could not load API data')).toBeVisible()
-  await expect(user.page.getByText('Retried 1 time automatically.')).toBeVisible()
+  await user.page.goto("/api-status");
+  await expect(
+    user.page.getByText("Loading integration catalog..."),
+  ).toBeVisible();
+  await expect(user.page.getByText("Could not load API data")).toBeVisible();
+  await expect(
+    user.page.getByText("Retried 1 time automatically."),
+  ).toBeVisible();
 
-  const retryButton = user.page.getByRole('button', { name: 'Retry' })
-  await expect(retryButton).toBeVisible()
+  const retryButton = user.page.getByRole("button", { name: "Retry" });
+  await expect(retryButton).toBeVisible();
 
-  const urlAfterFailure = user.page.url()
-  const requestsAfterFailure = requestCount
-  await retryButton.click()
-  await expect.poll(() => requestCount).toBeGreaterThan(requestsAfterFailure)
-  expect(user.page.url()).toBe(urlAfterFailure)
-})
+  const urlAfterFailure = user.page.url();
+  const requestsAfterFailure = requestCount;
+  await retryButton.click();
+  await expect.poll(() => requestCount).toBeGreaterThan(requestsAfterFailure);
+  expect(user.page.url()).toBe(urlAfterFailure);
+});
+
+test("an opening is posted, claimed, and released across two browsers", async ({
+  users,
+}) => {
+  const [organizer, volunteer] = await users(2);
+  await Promise.all([
+    organizer.page.goto("/home"),
+    volunteer.page.goto("/home"),
+  ]);
+  const title = `__test-${Date.now()}__ Pantry sorting`;
+  const start = new Date(Date.now() + 48 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 16);
+  const end = new Date(Date.now() + 50 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 16);
+
+  await organizer.page.getByRole("button", { name: "Post an opening" }).click();
+  await organizer.page.getByLabel("Role or task").fill(title);
+  await organizer.page.getByLabel("Organization").fill("Goodturn Test Pantry");
+  await organizer.page.getByLabel("Starts").fill(start);
+  await organizer.page.getByLabel("Ends").fill(end);
+  await organizer.page.getByLabel("Location").fill("Community center");
+  await organizer.page.getByRole("button", { name: "Publish opening" }).click();
+
+  const organizerCard = organizer.page
+    .getByTestId("shift-card")
+    .filter({ hasText: title });
+  const volunteerCard = volunteer.page
+    .getByTestId("shift-card")
+    .filter({ hasText: title });
+  await expect(organizerCard).toBeVisible();
+  await expect(volunteerCard).toBeVisible();
+  await expect(
+    volunteerCard.getByRole("button", { name: "Cancel" }),
+  ).toHaveCount(0);
+
+  await volunteerCard.getByRole("button", { name: "Claim opening" }).click();
+  await expect(volunteerCard.getByText("You’re on the roster")).toBeVisible();
+  await expect(organizerCard.getByText("Spot filled")).toBeVisible();
+  await expect(
+    organizerCard.getByRole("button", { name: "Claim opening" }),
+  ).toHaveCount(0);
+
+  await volunteerCard.getByRole("button", { name: "Release" }).click();
+  await expect(organizerCard.getByText("Open spot")).toBeVisible();
+  await organizerCard.getByRole("button", { name: "Cancel" }).click();
+  await expect(organizerCard).toHaveCount(0);
+});
