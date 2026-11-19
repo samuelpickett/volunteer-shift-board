@@ -1,7 +1,8 @@
-// AI-generated code
+/* This file contains AI-generated code. */
 import type { CollectionSchema } from "deepspace/schema";
 
 export interface Shift {
+  groupId?: string;
   title: string;
   organization: string;
   location: string;
@@ -19,10 +20,11 @@ export interface Signup {
   remindedAt?: string;
 }
 
-/** Each signed-in organizer owns the openings they post; admins may moderate any. */
+/** Each signed-in organizer owns the spots they post; admins may moderate any. */
 export const shiftsSchema: CollectionSchema = {
   name: "shifts",
   columns: [
+    { name: "groupId", storage: "text", interpretation: "plain" },
     { name: "title", storage: "text", interpretation: "plain", required: true },
     {
       name: "organization",

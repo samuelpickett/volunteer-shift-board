@@ -171,13 +171,13 @@ test("an opening is posted, claimed, and released across two browsers", async ({
     .toISOString()
     .slice(0, 16);
 
-  await organizer.page.getByRole("button", { name: "Post an opening" }).click();
+  await organizer.page.getByRole("button", { name: "Post a shift" }).click();
   await organizer.page.getByLabel("Role or task").fill(title);
   await organizer.page.getByLabel("Organization").fill("Goodturn Test Pantry");
   await organizer.page.getByLabel("Starts").fill(start);
   await organizer.page.getByLabel("Ends").fill(end);
   await organizer.page.getByLabel("Location").fill("Community center");
-  await organizer.page.getByRole("button", { name: "Publish opening" }).click();
+  await organizer.page.getByRole("button", { name: "Publish shift" }).click();
 
   const organizerCard = organizer.page
     .getByTestId("shift-card")
@@ -191,15 +191,67 @@ test("an opening is posted, claimed, and released across two browsers", async ({
     volunteerCard.getByRole("button", { name: "Cancel" }),
   ).toHaveCount(0);
 
-  await volunteerCard.getByRole("button", { name: "Claim opening" }).click();
+  await volunteerCard.getByRole("button", { name: "Claim spot" }).click();
   await expect(volunteerCard.getByText("You’re on the roster")).toBeVisible();
-  await expect(organizerCard.getByText("Spot filled")).toBeVisible();
+  await expect(organizerCard.getByText("Full")).toBeVisible();
   await expect(
-    organizerCard.getByRole("button", { name: "Claim opening" }),
+    organizerCard.getByRole("button", { name: "Claim spot" }),
   ).toHaveCount(0);
 
   await volunteerCard.getByRole("button", { name: "Release" }).click();
-  await expect(organizerCard.getByText("Open spot")).toBeVisible();
+  await expect(organizerCard.getByText("1 spot open")).toBeVisible();
+  await organizerCard.getByRole("button", { name: "Cancel" }).click();
+  await expect(organizerCard).toHaveCount(0);
+});
+
+test("one posted shift offers multiple independently claimable spots", async ({
+  users,
+}) => {
+  const [organizer, volunteer] = await users(2);
+  await Promise.all([
+    organizer.page.goto("/home"),
+    volunteer.page.goto("/home"),
+  ]);
+  const title = `__test-${Date.now()}__ Two-person shift`;
+  const start = new Date(Date.now() + 72 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 16);
+  const end = new Date(Date.now() + 74 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 16);
+
+  await organizer.page.getByRole("button", { name: "Post a shift" }).click();
+  await organizer.page.getByLabel("Role or task").fill(title);
+  await organizer.page.getByLabel("Organization").fill("Goodturn Test Pantry");
+  await organizer.page.getByLabel("Volunteer spots").fill("2");
+  await organizer.page.getByLabel("Starts").fill(start);
+  await organizer.page.getByLabel("Ends").fill(end);
+  await organizer.page.getByLabel("Location").fill("Community center");
+  await organizer.page.getByRole("button", { name: "Publish shift" }).click();
+
+  const organizerCard = organizer.page
+    .getByTestId("shift-card")
+    .filter({ hasText: title });
+  const volunteerCard = volunteer.page
+    .getByTestId("shift-card")
+    .filter({ hasText: title });
+  await expect(organizerCard).toHaveCount(1);
+  await expect(organizerCard.getByText("2 of 2 spots open")).toBeVisible();
+  await expect(volunteerCard.getByText("2 of 2 spots open")).toBeVisible();
+
+  await volunteerCard.getByRole("button", { name: "Claim spot" }).click();
+  await expect(organizerCard.getByText("1 of 2 spots open")).toBeVisible();
+  await organizerCard.getByRole("button", { name: "Claim spot" }).click();
+  await expect(organizerCard.getByText("Full")).toBeVisible();
+  await expect(volunteerCard.getByText("Full")).toBeVisible();
+  await expect(
+    volunteerCard.getByRole("button", { name: "Claim spot" }),
+  ).toHaveCount(0);
+
+  await volunteerCard.getByRole("button", { name: "Release" }).click();
+  await expect(organizerCard.getByText("1 of 2 spots open")).toBeVisible();
+  await volunteerCard.getByRole("button", { name: "Claim spot" }).click();
+  await expect(organizerCard.getByText("Full")).toBeVisible();
   await organizerCard.getByRole("button", { name: "Cancel" }).click();
   await expect(organizerCard).toHaveCount(0);
 });

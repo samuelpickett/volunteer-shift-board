@@ -69,16 +69,16 @@ export default function Landing() {
               <span className="text-sm font-bold text-primary">01 /</span>
               <h2 className="mt-4 font-serif text-2xl">Post a need</h2>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                A coordinator adds a role, place, time, and the details that
-                help someone arrive prepared.
+                A coordinator adds a role, place, time, and the number of
+                volunteers needed.
               </p>
             </div>
             <div>
               <span className="text-sm font-bold text-primary">02 /</span>
               <h2 className="mt-4 font-serif text-2xl">Claim a spot</h2>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                A volunteer signs in and claims an open spot. Each opening can
-                be claimed once.
+                A volunteer signs in and claims an open spot. Each spot can be
+                claimed once.
               </p>
             </div>
             <div>

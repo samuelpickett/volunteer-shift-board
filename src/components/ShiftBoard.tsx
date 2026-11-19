@@ -1,4 +1,4 @@
-// AI-generated code
+/* This file contains AI-generated code. */
 import { useState, type FormEvent } from "react";
 import { CalendarDays, Check, Clock3, MapPin, Plus, Users } from "lucide-react";
 import {
@@ -48,6 +48,7 @@ export default function ShiftBoard() {
   const [form, setForm] = useState({
     title: "",
     organization: "",
+    spots: "1",
     location: "",
     description: "",
     startsAt: "",
@@ -63,16 +64,31 @@ export default function ShiftBoard() {
   const signupByShift = new Map(
     signups.map((signup) => [signup.data.shiftId, signup]),
   );
-  const mine = signups.filter((signup) => signup.data.userId === userId).length;
+  const groupedSpots = new Map<string, typeof upcoming>();
+  for (const spot of upcoming) {
+    const groupKey = `${spot.createdBy}:${spot.data.groupId || spot.recordId}`;
+    groupedSpots.set(groupKey, [...(groupedSpots.get(groupKey) ?? []), spot]);
+  }
+  const groups = Array.from(groupedSpots, ([groupId, spots]) => ({
+    groupId,
+    spots,
+    lead: spots[0],
+  }));
+  const mine = groups.filter((group) =>
+    group.spots.some(
+      (spot) => signupByShift.get(spot.recordId)?.data.userId === userId,
+    ),
+  ).length;
   const available = upcoming.filter(
     (shift) => !signupByShift.has(shift.recordId),
   ).length;
 
-  /** Validate and publish a single opening with a confirmed server write. */
+  /** Validate one shift and publish its spots with confirmed writes. */
   async function publish(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const start = new Date(form.startsAt);
     const end = new Date(form.endsAt);
+    const spotCount = Number(form.spots);
     if (
       !form.title.trim() ||
       !form.organization.trim() ||
@@ -80,49 +96,72 @@ export default function ShiftBoard() {
       !Number.isFinite(start.getTime()) ||
       start.getTime() <= Date.now() ||
       !Number.isFinite(end.getTime()) ||
-      end <= start
+      end <= start ||
+      !Number.isInteger(spotCount) ||
+      spotCount < 1 ||
+      spotCount > 20
     ) {
       toast.error(
         "Check the shift details",
-        "Enter a future start and an end after it.",
+        "Enter a future start, an end after it, and 1 to 20 spots.",
       );
       return;
     }
     setSaving(true);
+    const createdIds: string[] = [];
     try {
-      await shiftWrites.createConfirmed({
-        title: form.title.trim(),
-        organization: form.organization.trim(),
-        location: form.location.trim(),
-        description: form.description.trim(),
-        startsAt: start.toISOString(),
-        endsAt: end.toISOString(),
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        status: "open",
-      });
+      const groupId = crypto.randomUUID();
+      for (let spot = 0; spot < spotCount; spot += 1) {
+        const recordId = await shiftWrites.createConfirmed({
+          groupId,
+          title: form.title.trim(),
+          organization: form.organization.trim(),
+          location: form.location.trim(),
+          description: form.description.trim(),
+          startsAt: start.toISOString(),
+          endsAt: end.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          status: "open",
+        });
+        createdIds.push(recordId);
+      }
       setForm({
         title: "",
         organization: "",
+        spots: "1",
         location: "",
         description: "",
         startsAt: "",
         endsAt: "",
       });
       setFormOpen(false);
-      toast.success("Opening published");
+      toast.success("Shift published", `${spotCount} spots available.`);
     } catch (error) {
-      toast.error("Could not publish opening", String(error));
+      let cleanupFailed = false;
+      for (const recordId of createdIds) {
+        try {
+          await shiftWrites.removeConfirmed(recordId);
+        } catch {
+          cleanupFailed = true;
+        }
+      }
+      toast.error(
+        "Could not publish shift",
+        cleanupFailed
+          ? "Some spots may remain on the board. Check the shift before retrying."
+          : String(error),
+      );
     } finally {
       setSaving(false);
     }
   }
 
-  /** Ask the worker to verify the opening before creating its signup. */
-  async function claim(shiftId: string) {
-    setBusyId(shiftId);
+  /** Ask the worker to claim one available spot in the selected shift. */
+  async function claim(shiftId: string, groupId: string) {
+    setBusyId(groupId);
     try {
       const token = await getAuthToken();
-      if (!token) throw new Error("Sign in to claim an opening.");
+      if (!token) throw new Error("Sign in to claim a spot.");
       const response = await fetch("/api/actions/claimShift", {
         method: "POST",
         headers: {
@@ -136,7 +175,7 @@ export default function ShiftBoard() {
         error?: string;
       };
       if (!response.ok || !result.success)
-        throw new Error(result.error ?? "The opening could not be claimed.");
+        throw new Error(result.error ?? "The spot could not be claimed.");
       toast.success("You’re on the roster");
     } catch (error) {
       toast.error("Claim failed", String(error));
@@ -146,26 +185,28 @@ export default function ShiftBoard() {
   }
 
   /** Release the caller's own signup; collection permissions enforce ownership. */
-  async function release(signupId: string, shiftId: string) {
-    setBusyId(shiftId);
+  async function release(signupId: string, groupId: string) {
+    setBusyId(groupId);
     try {
       await signupWrites.removeConfirmed(signupId);
-      toast.success("Opening released");
+      toast.success("Spot released");
     } catch (error) {
-      toast.error("Could not release opening", String(error));
+      toast.error("Could not release spot", String(error));
     } finally {
       setBusyId(null);
     }
   }
 
-  /** Cancel an opening without erasing its prior signup from the record history. */
-  async function cancel(shiftId: string) {
-    setBusyId(shiftId);
+  /** Cancel every spot in a shift without erasing its signup history. */
+  async function cancel(groupId: string, spotIds: string[]) {
+    setBusyId(groupId);
     try {
-      await shiftWrites.putConfirmed(shiftId, { status: "cancelled" });
-      toast.success("Opening cancelled");
+      for (const spotId of spotIds) {
+        await shiftWrites.putConfirmed(spotId, { status: "cancelled" });
+      }
+      toast.success("Shift cancelled");
     } catch (error) {
-      toast.error("Could not cancel opening", String(error));
+      toast.error("Could not cancel shift", String(error));
     } finally {
       setBusyId(null);
     }
@@ -191,7 +232,7 @@ export default function ShiftBoard() {
           </div>
           {canOrganize && (
             <Button onClick={() => setFormOpen((open) => !open)}>
-              <Plus /> Post an opening
+              <Plus /> Post a shift
             </Button>
           )}
         </header>
@@ -201,8 +242,8 @@ export default function ShiftBoard() {
         >
           <Stat
             icon={<CalendarDays />}
-            label="Upcoming openings"
-            value={upcoming.length}
+            label="Upcoming shifts"
+            value={groups.length}
           />
           <Stat icon={<Users />} label="Still available" value={available} />
           <Stat icon={<Check />} label="Your commitments" value={mine} />
@@ -216,10 +257,11 @@ export default function ShiftBoard() {
               Organizer desk
             </p>
             <h2 className="mb-2 mt-2 font-serif text-2xl">
-              Post one volunteer opening
+              Post a volunteer shift
             </h2>
             <p className="mb-6 text-sm text-muted-foreground">
-              Need three people? Post three openings, one for each spot.
+              Set the number of volunteers needed. Everyone sees one shift and
+              its live availability.
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="text-sm font-medium">
@@ -244,6 +286,19 @@ export default function ShiftBoard() {
                   onChange={(e) =>
                     setForm({ ...form, organization: e.target.value })
                   }
+                />
+              </label>
+              <label className="text-sm font-medium">
+                Volunteer spots
+                <Input
+                  required
+                  type="number"
+                  min={1}
+                  max={20}
+                  step={1}
+                  className="mt-2"
+                  value={form.spots}
+                  onChange={(e) => setForm({ ...form, spots: e.target.value })}
                 />
               </label>
               <label className="text-sm font-medium">
@@ -300,7 +355,7 @@ export default function ShiftBoard() {
                 loading={saving}
                 disabled={!shiftWrites.ready}
               >
-                Publish opening
+                Publish shift
               </Button>
               <span className="text-xs text-muted-foreground">
                 Times use your local timezone.
@@ -343,7 +398,7 @@ export default function ShiftBoard() {
             <CalendarDays className="mx-auto mb-4 text-primary" />
             <h3 className="font-serif text-2xl">The board is clear for now</h3>
             <p className="mt-2 text-muted-foreground">
-              New openings appear here when a coordinator posts them.
+              New shifts appear here when a coordinator posts them.
             </p>
           </div>
         )}
@@ -360,15 +415,24 @@ export default function ShiftBoard() {
         )}
         <div className="grid gap-4 md:grid-cols-2">
           {boardReady &&
-            upcoming.map((shift) => {
-              const signup = signupByShift.get(shift.recordId);
-              const isMine = signup?.data.userId === userId;
-              const volunteerName = users.find(
-                (person) => person.id === signup?.data.userId,
-              )?.name;
+            groups.map((group) => {
+              const shift = group.lead;
+              const roster = group.spots.flatMap((spot) => {
+                const signup = signupByShift.get(spot.recordId);
+                return signup ? [signup] : [];
+              });
+              const mySignup = roster.find(
+                (signup) => signup.data.userId === userId,
+              );
+              const spotsAvailable = group.spots.length - roster.length;
+              const volunteerNames = roster.map(
+                (signup) =>
+                  users.find((person) => person.id === signup.data.userId)
+                    ?.name ?? "A volunteer",
+              );
               return (
                 <article
-                  key={shift.recordId}
+                  key={group.groupId}
                   data-testid="shift-card"
                   className="flex flex-col rounded-2xl border border-border bg-card p-6 shadow-sm"
                 >
@@ -377,9 +441,13 @@ export default function ShiftBoard() {
                       {shift.data.organization}
                     </span>
                     <span
-                      className={`text-xs font-semibold ${signup ? "text-muted-foreground" : "text-primary"}`}
+                      className={`text-xs font-semibold ${spotsAvailable === 0 ? "text-muted-foreground" : "text-primary"}`}
                     >
-                      {signup ? "Spot filled" : "Open spot"}
+                      {spotsAvailable === 0
+                        ? "Full"
+                        : group.spots.length === 1
+                          ? "1 spot open"
+                          : `${spotsAvailable} of ${group.spots.length} spots open`}
                     </span>
                   </div>
                   <h3 className="font-serif text-2xl leading-tight">
@@ -404,39 +472,46 @@ export default function ShiftBoard() {
                       {shift.data.description}
                     </p>
                   )}
+                  {volunteerNames.length > 0 && (
+                    <p className="mt-4 text-sm text-muted-foreground">
+                      Roster: {volunteerNames.join(", ")}
+                    </p>
+                  )}
                   <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-6">
                     <span className="text-sm text-muted-foreground">
-                      {isMine
+                      {mySignup
                         ? "You’re on the roster"
-                        : signup
-                          ? `${volunteerName ?? "A volunteer"} claimed this spot`
-                          : "Be the first to help"}
+                        : spotsAvailable === 0
+                          ? "Every spot is claimed"
+                          : "There’s room to help"}
                     </span>
                     <div className="flex items-center gap-2">
-                      {isMine && (
+                      {mySignup && (
                         <Button
                           size="sm"
                           variant="outline"
                           disabled={
-                            !signupWrites.ready || busyId === shift.recordId
+                            !signupWrites.ready || busyId === group.groupId
                           }
                           onClick={() =>
-                            void release(signup!.recordId, shift.recordId)
+                            void release(mySignup.recordId, group.groupId)
                           }
                         >
                           Release
                         </Button>
                       )}
-                      {!signup && isSignedIn && (
+                      {!mySignup && spotsAvailable > 0 && isSignedIn && (
                         <Button
                           size="sm"
-                          loading={busyId === shift.recordId}
-                          onClick={() => void claim(shift.recordId)}
+                          loading={busyId === group.groupId}
+                          onClick={() =>
+                            void claim(shift.recordId, group.groupId)
+                          }
                         >
-                          Claim opening
+                          Claim spot
                         </Button>
                       )}
-                      {!signup && !isSignedIn && (
+                      {spotsAvailable > 0 && !isSignedIn && (
                         <span className="text-xs text-muted-foreground">
                           Sign in above to claim
                         </span>
@@ -447,9 +522,14 @@ export default function ShiftBoard() {
                           size="sm"
                           variant="ghost"
                           disabled={
-                            !shiftWrites.ready || busyId === shift.recordId
+                            !shiftWrites.ready || busyId === group.groupId
                           }
-                          onClick={() => void cancel(shift.recordId)}
+                          onClick={() =>
+                            void cancel(
+                              group.groupId,
+                              group.spots.map((spot) => spot.recordId),
+                            )
+                          }
                         >
                           Cancel
                         </Button>
@@ -461,8 +541,7 @@ export default function ShiftBoard() {
             })}
         </div>
         <p className="mt-8 text-xs text-muted-foreground">
-          Each opening is one spot. Claims are first come, first served and
-          checked on the server.
+          Claims are first come, first served and checked on the server.
         </p>
       </div>
     </div>
