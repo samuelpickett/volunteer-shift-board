@@ -79,8 +79,8 @@ export default function ShiftBoard() {
       (spot) => signupByShift.get(spot.recordId)?.data.userId === userId,
     ),
   ).length;
-  const available = upcoming.filter(
-    (shift) => !signupByShift.has(shift.recordId),
+  const available = groups.filter((group) =>
+    group.spots.some((spot) => !signupByShift.has(spot.recordId)),
   ).length;
 
   /** Validate one shift and publish its spots with confirmed writes. */
@@ -245,7 +245,7 @@ export default function ShiftBoard() {
             label="Upcoming shifts"
             value={groups.length}
           />
-          <Stat icon={<Users />} label="Still available" value={available} />
+          <Stat icon={<Users />} label="Available shifts" value={available} />
           <Stat icon={<Check />} label="Your commitments" value={mine} />
         </section>
         {canOrganize && formOpen && (

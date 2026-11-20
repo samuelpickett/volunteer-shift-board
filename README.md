@@ -4,7 +4,7 @@ Goodturn is a live volunteer shift board built for the DeepSpace build exercise.
 
 ## Core flow
 
-1. Visit the board to see upcoming shifts and current availability.
+1. Visit the board to see upcoming shifts and current availability. The summary counts shifts with at least one open spot; each shift card shows its remaining spots.
 2. Sign in to post a shift or claim a spot. A posting includes the role, organization, location, start and end, number of spots, and optional instructions.
 3. Claim an open spot. A server action checks that the shift still exists, is open, and has not started. The `signups` collection has a unique constraint on `shiftId`, so two people cannot claim the same spot.
 4. Release your own claim to reopen the spot. Organizers may cancel shifts they posted.

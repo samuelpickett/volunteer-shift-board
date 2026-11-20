@@ -219,6 +219,11 @@ test("one posted shift offers multiple independently claimable spots", async ({
   const end = new Date(Date.now() + 74 * 60 * 60 * 1000)
     .toISOString()
     .slice(0, 16);
+  const availableCount = organizer.page
+    .getByText("Available shifts")
+    .locator("..")
+    .getByText(/^\d+$/);
+  const availableBeforePosting = Number(await availableCount.textContent());
 
   await organizer.page.getByRole("button", { name: "Post a shift" }).click();
   await organizer.page.getByLabel("Role or task").fill(title);
@@ -238,20 +243,25 @@ test("one posted shift offers multiple independently claimable spots", async ({
   await expect(organizerCard).toHaveCount(1);
   await expect(organizerCard.getByText("2 of 2 spots open")).toBeVisible();
   await expect(volunteerCard.getByText("2 of 2 spots open")).toBeVisible();
+  await expect(availableCount).toHaveText(String(availableBeforePosting + 1));
 
   await volunteerCard.getByRole("button", { name: "Claim spot" }).click();
   await expect(organizerCard.getByText("1 of 2 spots open")).toBeVisible();
+  await expect(availableCount).toHaveText(String(availableBeforePosting + 1));
   await organizerCard.getByRole("button", { name: "Claim spot" }).click();
   await expect(organizerCard.getByText("Full")).toBeVisible();
   await expect(volunteerCard.getByText("Full")).toBeVisible();
+  await expect(availableCount).toHaveText(String(availableBeforePosting));
   await expect(
     volunteerCard.getByRole("button", { name: "Claim spot" }),
   ).toHaveCount(0);
 
   await volunteerCard.getByRole("button", { name: "Release" }).click();
   await expect(organizerCard.getByText("1 of 2 spots open")).toBeVisible();
+  await expect(availableCount).toHaveText(String(availableBeforePosting + 1));
   await volunteerCard.getByRole("button", { name: "Claim spot" }).click();
   await expect(organizerCard.getByText("Full")).toBeVisible();
+  await expect(availableCount).toHaveText(String(availableBeforePosting));
   await organizerCard.getByRole("button", { name: "Cancel" }).click();
   await expect(organizerCard).toHaveCount(0);
 });
